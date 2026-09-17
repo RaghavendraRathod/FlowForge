@@ -16,11 +16,15 @@ public class WorkerService {
     private final JobClaimService jobClaimService;
     private final JobRepository jobRepository;
 
+    private final TaskExecutor taskExecutor;
+
     public WorkerService(JobClaimService jobClaimService,
-                          JobRepository jobRepository) {
-        this.jobClaimService = jobClaimService;
-        this.jobRepository = jobRepository;
-    }
+                     JobRepository jobRepository,
+                     TaskExecutor taskExecutor) {
+    this.jobClaimService = jobClaimService;
+    this.jobRepository = jobRepository;
+    this.taskExecutor = taskExecutor;
+}
 
     @Scheduled(fixedDelay = 5000)
     public void processNextJob() {
@@ -36,14 +40,15 @@ public class WorkerService {
         try {
             System.out.println("Worker executing job: " + job.getId());
 
-            Thread.sleep(2000);
+            String result = taskExecutor.execute(job);
 
             completeJob(job);
 
             System.out.println("Worker completed job: " + job.getId());
+            System.out.println("Job result: " + result);
 
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+        } catch (Exception e) {
+            System.out.println("Job failed: " + e.getMessage());
             failJob(job);
         }
     }

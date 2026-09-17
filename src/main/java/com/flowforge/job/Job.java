@@ -19,6 +19,10 @@ public class Job {
 
     private UUID workflowId;
 
+    private String taskType;
+
+    private String payload;
+
     @Enumerated(EnumType.STRING)
     private JobStatus status;
 
@@ -51,6 +55,22 @@ public class Job {
     public void setWorkflowId(UUID workflowId) {
         this.workflowId = workflowId;
     }
+
+    public String getTaskType() {
+       return taskType;
+   }
+
+    public void setTaskType(String taskType) {
+       this.taskType = taskType;
+    }
+
+    public String getPayload() {
+       return payload;
+ }
+
+    public void setPayload(String payload) {
+       this.payload = payload;
+   }
 
     public JobStatus getStatus() {
         return status;
