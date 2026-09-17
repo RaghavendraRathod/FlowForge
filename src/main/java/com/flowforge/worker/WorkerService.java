@@ -42,6 +42,9 @@ public class WorkerService {
 
             String result = taskExecutor.execute(job);
 
+            job.setResult(result);
+            job.setErrorMessage(null);
+
             completeJob(job);
 
             System.out.println("Worker completed job: " + job.getId());
@@ -49,6 +52,10 @@ public class WorkerService {
 
         } catch (Exception e) {
             System.out.println("Job failed: " + e.getMessage());
+
+            job.setResult(null);
+            job.setErrorMessage(e.getMessage());
+
             failJob(job);
         }
     }
