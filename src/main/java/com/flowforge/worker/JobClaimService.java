@@ -22,7 +22,7 @@ public class JobClaimService {
     public Optional<Job> claimNextJob() {
 
         Optional<Job> optionalJob =
-        jobRepository.findFirstByStatusOrderByCreatedAtAsc(JobStatus.QUEUED);
+                jobRepository.findNextQueuedJobForUpdate();
 
         if (optionalJob.isEmpty()) {
             return Optional.empty();
