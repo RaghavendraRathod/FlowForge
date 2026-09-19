@@ -19,7 +19,6 @@ public class Job {
 
     private UUID workflowId;
 
-    private String taskType;
 
     private String payload;
 
@@ -37,6 +36,10 @@ public class Job {
     private String errorMessage;
 
     private int retryCount;
+
+    private int maxRetries = 3;
+
+    private String taskType;
 
     public Job() {
     }
@@ -111,6 +114,14 @@ public class Job {
     public void setRetryCount(int retryCount) {
         this.retryCount = retryCount;
     }
+
+    public int getMaxRetries() {
+        return maxRetries;
+   }
+
+    public void setMaxRetries(int maxRetries) {
+        this.maxRetries = maxRetries;
+   }
 
     public String getResult() {
         return result;

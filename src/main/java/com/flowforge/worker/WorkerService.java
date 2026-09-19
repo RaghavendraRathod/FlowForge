@@ -56,7 +56,30 @@ public class WorkerService {
             job.setResult(null);
             job.setErrorMessage(e.getMessage());
 
-            failJob(job);
+            if (job.getRetryCount() < job.getMaxRetries()) {
+
+                job.setRetryCount(job.getRetryCount() + 1);
+                job.setStatus(JobStatus.QUEUED);
+                job.setStartedAt(null);
+
+                jobRepository.save(job);
+
+                System.out.println(
+                        "Retrying job " + job.getId()
+                                + " (retry " + job.getRetryCount()
+                                + "/" + job.getMaxRetries() + ")"
+              );
+
+            } else {
+
+                failJob(job);
+
+                System.out.println(
+                        "Job permanently failed after "
+                                + job.getRetryCount()
+                                + " retries: " + job.getId()
+              );
+            }
         }
     }
 
