@@ -10,19 +10,19 @@ import java.time.Instant;
 import java.util.Optional;
 
 @Service
-public class JobClaimService {
+public class JobRecoveryService {
 
     private final JobRepository jobRepository;
 
-    public JobClaimService(JobRepository jobRepository) {
+    public JobRecoveryService(JobRepository jobRepository) {
         this.jobRepository = jobRepository;
     }
 
     @Transactional
-    public Optional<Job> claimNextJob() {
+    public Optional<Job> recoverExpiredJob() {
 
         Optional<Job> optionalJob =
-                jobRepository.findNextQueuedJobForUpdate();
+                jobRepository.findExpiredRunningJobForUpdate();
 
         if (optionalJob.isEmpty()) {
             return Optional.empty();
@@ -30,13 +30,15 @@ public class JobClaimService {
 
         Job job = optionalJob.get();
 
-        Instant now = Instant.now();
-
-        job.setStatus(JobStatus.RUNNING);
-        job.setStartedAt(now);
-        job.setLeaseUntil(now.plusSeconds(60));
+        job.setStatus(JobStatus.QUEUED);
+        job.setStartedAt(null);
+        job.setLeaseUntil(null);
 
         jobRepository.save(job);
+
+        System.out.println(
+                "Recovered expired job: " + job.getId()
+        );
 
         return Optional.of(job);
     }

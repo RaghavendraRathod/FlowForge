@@ -14,20 +14,24 @@ import java.util.Optional;
 public class WorkerService {
 
     private final JobClaimService jobClaimService;
+    private final JobRecoveryService jobRecoveryService;
     private final JobRepository jobRepository;
-
     private final TaskExecutor taskExecutor;
 
     public WorkerService(JobClaimService jobClaimService,
-                     JobRepository jobRepository,
-                     TaskExecutor taskExecutor) {
-    this.jobClaimService = jobClaimService;
-    this.jobRepository = jobRepository;
-    this.taskExecutor = taskExecutor;
-}
+                         JobRecoveryService jobRecoveryService,
+                         JobRepository jobRepository,
+                         TaskExecutor taskExecutor) {
+       this.jobClaimService = jobClaimService;
+       this.jobRecoveryService = jobRecoveryService;
+       this.jobRepository = jobRepository;
+       this.taskExecutor = taskExecutor;
+    }
 
     @Scheduled(fixedDelay = 5000)
     public void processNextJob() {
+
+        jobRecoveryService.recoverExpiredJob();
 
         Optional<Job> optionalJob = jobClaimService.claimNextJob();
 

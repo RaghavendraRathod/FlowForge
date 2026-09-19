@@ -29,6 +29,8 @@ public class Job {
 
     private Instant startedAt;
 
+    private Instant leaseUntil;
+
     private Instant completedAt;
 
     private String result;
@@ -94,6 +96,14 @@ public class Job {
     public Instant getStartedAt() {
         return startedAt;
     }
+
+    public Instant getLeaseUntil() {
+        return leaseUntil;
+   }
+
+    public void setLeaseUntil(Instant leaseUntil) {
+        this.leaseUntil = leaseUntil;
+   }
 
     public void setStartedAt(Instant startedAt) {
         this.startedAt = startedAt;
