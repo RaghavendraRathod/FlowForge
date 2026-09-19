@@ -3,8 +3,16 @@ package com.flowforge.worker;
 import com.flowforge.job.Job;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class TaskExecutor {
+
+    private final List<TaskHandler> taskHandlers;
+
+    public TaskExecutor(List<TaskHandler> taskHandlers) {
+        this.taskHandlers = taskHandlers;
+    }
 
     public String execute(Job job) {
 
@@ -14,26 +22,16 @@ public class TaskExecutor {
             throw new IllegalArgumentException("Task type is required");
         }
 
-        return switch (taskType.toUpperCase()) {
-
-            case "DEMO" -> executeDemoTask(job);
-
-            default -> throw new IllegalArgumentException(
-                    "Unsupported task type: " + taskType
-            );
-        };
-    }
-
-    private String executeDemoTask(Job job) {
-
-        String payload = job.getPayload();
-
-        if (payload == null || payload.isBlank()) {
-            throw new IllegalArgumentException("Payload is required");
-        }
-
-        System.out.println("Executing DEMO task with payload: " + payload);
-
-        return "Executed successfully: " + payload;
+        return taskHandlers.stream()
+                .filter(handler ->
+                        handler.getTaskType().equalsIgnoreCase(taskType)
+                )
+                .findFirst()
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "Unsupported task type: " + taskType
+                        )
+                )
+                .execute(job);
     }
 }
