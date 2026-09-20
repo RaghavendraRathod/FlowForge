@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.util.Optional;
 
 import java.util.UUID;
+import java.util.List;
 
 @Service
 public class WorkerService {
@@ -120,17 +121,66 @@ public class WorkerService {
     }
 
     public Worker heartbeat(UUID workerId) {
-
         Worker worker = workerRepository.findById(workerId)
-                .orElseThrow(() ->
-                        new RuntimeException("Worker not found"));
+                .orElseThrow(() -> new RuntimeException("Worker not found"));
 
         worker.setLastHeartbeat(Instant.now());
+        worker.setStatus(WorkerStatus.ACTIVE);
 
         return workerRepository.save(worker);
     }
 
     public java.util.List<Worker> getAllWorkers() {
         return workerRepository.findAll();
+    }
+
+    public Worker getWorker(UUID workerId) {
+
+        return workerRepository.findById(workerId)
+                .orElseThrow(() ->
+                        new RuntimeException("Worker not found"));
+   }
+
+    public WorkerStatus determineHealth(Worker worker) {
+
+       Instant now = Instant.now();
+
+       long secondsSinceHeartbeat =
+               java.time.Duration.between(
+                    worker.getLastHeartbeat(),
+                    now
+                ).getSeconds();
+
+        if (secondsSinceHeartbeat <= 15) {
+            return WorkerStatus.ACTIVE;
+        }
+
+        if (secondsSinceHeartbeat <= 30) {
+           return WorkerStatus.STALE;
+        }
+
+        return WorkerStatus.OFFLINE;
+    }
+
+    @Scheduled(fixedDelay = 10000)
+    public void monitorWorkerHealth() {
+
+        List<Worker> workers = workerRepository.findAll();
+
+        for (Worker worker : workers) {
+
+            WorkerStatus health = determineHealth(worker);
+
+            if (worker.getStatus() != health) {
+
+                worker.setStatus(health);
+                workerRepository.save(worker);
+
+                System.out.println(
+                        "Worker " + worker.getId() +
+                        " status changed to " + health
+               );
+            }
+        }
     }
 }

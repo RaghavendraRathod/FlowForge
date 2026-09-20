@@ -34,4 +34,12 @@ public class WorkerController {
 
         return workerService.getAllWorkers();
     }
+
+    @GetMapping("/{id}/health")
+    public WorkerStatus getWorkerHealth(@PathVariable UUID id) {
+
+        Worker worker = workerService.getWorker(id);
+
+        return workerService.determineHealth(worker);
+    }
 }
