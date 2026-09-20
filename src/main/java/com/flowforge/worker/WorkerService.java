@@ -10,6 +10,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.Optional;
 
+import java.util.UUID;
+
 @Service
 public class WorkerService {
 
@@ -17,15 +19,18 @@ public class WorkerService {
     private final JobRecoveryService jobRecoveryService;
     private final JobRepository jobRepository;
     private final TaskExecutor taskExecutor;
+    private final WorkerRepository workerRepository;
 
     public WorkerService(JobClaimService jobClaimService,
                          JobRecoveryService jobRecoveryService,
                          JobRepository jobRepository,
-                         TaskExecutor taskExecutor) {
-       this.jobClaimService = jobClaimService;
-       this.jobRecoveryService = jobRecoveryService;
-       this.jobRepository = jobRepository;
-       this.taskExecutor = taskExecutor;
+                         TaskExecutor taskExecutor,
+                         WorkerRepository workerRepository) {
+        this.jobClaimService = jobClaimService;
+        this.jobRecoveryService = jobRecoveryService;
+        this.jobRepository = jobRepository;
+        this.taskExecutor = taskExecutor;
+        this.workerRepository = workerRepository;
     }
 
     @Scheduled(fixedDelay = 5000)
@@ -105,5 +110,27 @@ public class WorkerService {
         job.setLeaseUntil(null);
 
         jobRepository.save(job);
+    }
+
+    public Worker registerWorker(String name) {
+
+        Worker worker = new Worker(name);
+
+        return workerRepository.save(worker);
+    }
+
+    public Worker heartbeat(UUID workerId) {
+
+        Worker worker = workerRepository.findById(workerId)
+                .orElseThrow(() ->
+                        new RuntimeException("Worker not found"));
+
+        worker.setLastHeartbeat(Instant.now());
+
+        return workerRepository.save(worker);
+    }
+
+    public java.util.List<Worker> getAllWorkers() {
+        return workerRepository.findAll();
     }
 }
