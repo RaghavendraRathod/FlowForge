@@ -92,6 +92,7 @@ public class WorkerService {
 
         job.setStatus(JobStatus.SUCCEEDED);
         job.setCompletedAt(Instant.now());
+        job.setLeaseUntil(null);
 
         jobRepository.save(job);
     }
@@ -101,6 +102,7 @@ public class WorkerService {
 
         job.setStatus(JobStatus.FAILED);
         job.setCompletedAt(Instant.now());
+        job.setLeaseUntil(null);
 
         jobRepository.save(job);
     }
