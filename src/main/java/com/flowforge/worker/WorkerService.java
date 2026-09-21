@@ -12,6 +12,7 @@ import java.util.Optional;
 
 import java.util.UUID;
 import java.util.List;
+import jakarta.annotation.PostConstruct;
 
 @Service
 public class WorkerService {
@@ -21,6 +22,44 @@ public class WorkerService {
     private final JobRepository jobRepository;
     private final TaskExecutor taskExecutor;
     private final WorkerRepository workerRepository;
+    private UUID workerId;
+
+    @PostConstruct
+    public void initializeWorker() {
+
+        String workerName = "worker-1";
+
+        Optional<Worker> existingWorker =
+                workerRepository.findByName(workerName);
+
+        if (existingWorker.isPresent()) {
+
+            Worker worker = existingWorker.get();
+
+            worker.setStatus(WorkerStatus.ACTIVE);
+            worker.setLastHeartbeat(Instant.now());
+
+            Worker savedWorker = workerRepository.save(worker);
+
+            this.workerId = savedWorker.getId();
+
+            System.out.println(
+                    "FlowForge worker reconnected: " + this.workerId
+            );
+
+        } else {
+
+            Worker worker = new Worker(workerName);
+
+            Worker savedWorker = workerRepository.save(worker);
+
+            this.workerId = savedWorker.getId();
+
+            System.out.println(
+                    "FlowForge worker registered: " + this.workerId
+            );
+        } 
+    }
 
     public WorkerService(JobClaimService jobClaimService,
                          JobRecoveryService jobRecoveryService,
@@ -39,7 +78,7 @@ public class WorkerService {
 
         jobRecoveryService.recoverExpiredJob();
 
-        Optional<Job> optionalJob = jobClaimService.claimNextJob();
+        Optional<Job> optionalJob = jobClaimService.claimNextJob(workerId);
 
         if (optionalJob.isEmpty()) {
             return;
@@ -71,6 +110,8 @@ public class WorkerService {
                 job.setRetryCount(job.getRetryCount() + 1);
                 job.setStatus(JobStatus.QUEUED);
                 job.setStartedAt(null);
+                job.setLeaseUntil(null);
+                job.setWorkerId(null);
 
                 jobRepository.save(job);
 

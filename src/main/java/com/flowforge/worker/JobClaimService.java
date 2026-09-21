@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class JobClaimService {
@@ -19,7 +20,7 @@ public class JobClaimService {
     }
 
     @Transactional
-    public Optional<Job> claimNextJob() {
+    public Optional<Job> claimNextJob(UUID workerId) {
 
         Optional<Job> optionalJob =
                 jobRepository.findNextQueuedJobForUpdate();
@@ -35,6 +36,7 @@ public class JobClaimService {
         job.setStatus(JobStatus.RUNNING);
         job.setStartedAt(now);
         job.setLeaseUntil(now.plusSeconds(60));
+        job.setWorkerId(workerId);
 
         jobRepository.save(job);
 

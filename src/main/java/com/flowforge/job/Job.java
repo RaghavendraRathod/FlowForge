@@ -19,6 +19,7 @@ public class Job {
 
     private UUID workflowId;
 
+    private UUID workerId;
 
     private String payload;
 
@@ -63,6 +64,14 @@ public class Job {
 
     public void setWorkflowId(UUID workflowId) {
         this.workflowId = workflowId;
+    }
+
+    public UUID getWorkerId() {
+        return workerId;
+    }
+
+    public void setWorkerId(UUID workerId) {
+        this.workerId = workerId;
     }
 
     public String getTaskType() {

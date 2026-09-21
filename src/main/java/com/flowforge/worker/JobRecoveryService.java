@@ -33,6 +33,7 @@ public class JobRecoveryService {
         job.setStatus(JobStatus.QUEUED);
         job.setStartedAt(null);
         job.setLeaseUntil(null);
+        job.setWorkerId(null);
 
         jobRepository.save(job);
 
