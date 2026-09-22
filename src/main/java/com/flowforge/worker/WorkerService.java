@@ -203,6 +203,20 @@ public class WorkerService {
         return WorkerStatus.OFFLINE;
     }
 
+    @Scheduled(fixedDelay = 5000)
+    public void sendHeartbeat() {
+
+        if (workerId == null) {
+            return;
+        }
+
+        heartbeat(workerId);
+
+        System.out.println(
+               "Worker heartbeat: " + workerId
+        );
+    }
+
     @Scheduled(fixedDelay = 10000)
     public void monitorWorkerHealth() {
 
