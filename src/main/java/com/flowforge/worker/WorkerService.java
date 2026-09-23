@@ -3,6 +3,8 @@ package com.flowforge.worker;
 import com.flowforge.job.Job;
 import com.flowforge.job.JobRepository;
 import com.flowforge.job.JobStatus;
+import com.flowforge.workflow.WorkflowProgressService;
+
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +24,7 @@ public class WorkerService {
     private final JobRepository jobRepository;
     private final TaskExecutor taskExecutor;
     private final WorkerRepository workerRepository;
+    private final WorkflowProgressService workflowProgressService;
     private UUID workerId;
 
     @PostConstruct
@@ -62,15 +65,17 @@ public class WorkerService {
     }
 
     public WorkerService(JobClaimService jobClaimService,
-                         JobRecoveryService jobRecoveryService,
-                         JobRepository jobRepository,
-                         TaskExecutor taskExecutor,
-                         WorkerRepository workerRepository) {
+                     JobRecoveryService jobRecoveryService,
+                     JobRepository jobRepository,
+                     TaskExecutor taskExecutor,
+                     WorkerRepository workerRepository,
+                     WorkflowProgressService workflowProgressService) {
         this.jobClaimService = jobClaimService;
         this.jobRecoveryService = jobRecoveryService;
         this.jobRepository = jobRepository;
         this.taskExecutor = taskExecutor;
         this.workerRepository = workerRepository;
+        this.workflowProgressService = workflowProgressService;
     }
 
     @Scheduled(fixedDelay = 5000)
@@ -95,6 +100,8 @@ public class WorkerService {
             job.setErrorMessage(null);
 
             completeJob(job);
+
+            workflowProgressService.handleJobSuccess(job);
 
             System.out.println("Worker completed job: " + job.getId());
             System.out.println("Job result: " + result);
