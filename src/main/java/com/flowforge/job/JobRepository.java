@@ -18,7 +18,10 @@ public interface JobRepository extends JpaRepository<Job, UUID> {
             """, nativeQuery = true)
     Optional<Job> findNextQueuedJobForUpdate();
 
-    boolean existsByWorkflowStepId(UUID workflowStepId);
+    boolean existsByWorkflowRunIdAndWorkflowStepId(
+            UUID workflowRunId,
+            UUID workflowStepId
+    );
 
     @Query(value = """
         SELECT *

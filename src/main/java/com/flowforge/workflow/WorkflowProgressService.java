@@ -58,16 +58,23 @@ public class WorkflowProgressService {
             return;
         }
 
-        if (jobRepository.existsByWorkflowStepId(nextStep.getId())) {
+        if (jobRepository.existsByWorkflowRunIdAndWorkflowStepId(
+                job.getWorkflowRunId(),
+                nextStep.getId())) {
+
             System.out.println(
-                    "Job already exists for workflow step: "
+                    "Job already exists for workflow run "
+                            + job.getWorkflowRunId()
+                            + " and workflow step "
                             + nextStep.getId()
-            );
-            return;
+                );
+
+                return;
         }
 
         Job nextJob = new Job(job.getWorkflowId());
 
+        nextJob.setWorkflowRunId(job.getWorkflowRunId());
         nextJob.setWorkflowStepId(nextStep.getId());
         nextJob.setTaskType(nextStep.getTaskType());
         nextJob.setPayload(nextStep.getPayload());

@@ -19,6 +19,8 @@ public class Job {
 
     private UUID workflowId;
 
+    private UUID workflowRunId;
+
     private UUID workflowStepId;
 
     private UUID workerId;
@@ -66,6 +68,14 @@ public class Job {
 
     public void setWorkflowId(UUID workflowId) {
         this.workflowId = workflowId;
+    }
+
+    public UUID getWorkflowRunId() {
+        return workflowRunId;
+    }
+
+    public void setWorkflowRunId(UUID workflowRunId) {
+        this.workflowRunId = workflowRunId;
     }
 
     public UUID getWorkflowStepId() {
