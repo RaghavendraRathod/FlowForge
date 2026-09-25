@@ -76,4 +76,9 @@ public class WorkflowRun {
     public void setCompletedAt(Instant completedAt) {
         this.completedAt = completedAt;
     }
+
+    public void markSucceeded() {
+        this.status = WorkflowRunStatus.SUCCEEDED;
+        this.completedAt = Instant.now();
+    }
 }

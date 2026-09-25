@@ -11,15 +11,18 @@ import java.util.List;
 public class WorkflowProgressService {
 
     private final WorkflowStepRepository workflowStepRepository;
+    private final WorkflowRunRepository workflowRunRepository;
     private final JobRepository jobRepository;
 
     public WorkflowProgressService(
             WorkflowStepRepository workflowStepRepository,
+            WorkflowRunRepository workflowRunRepository,
             JobRepository jobRepository) {
 
         this.workflowStepRepository = workflowStepRepository;
+        this.workflowRunRepository = workflowRunRepository;
         this.jobRepository = jobRepository;
-    }
+        }
 
     @Transactional
     public void handleJobSuccess(Job job) {
@@ -51,11 +54,27 @@ public class WorkflowProgressService {
                 .orElse(null);
 
         if (nextStep == null) {
-            System.out.println(
-                    "Workflow completed: "
-                            + job.getWorkflowId()
-            );
-            return;
+
+            WorkflowRun workflowRun =
+                    workflowRunRepository
+                            .findById(job.getWorkflowRunId())
+                            .orElseThrow(() ->
+                                    new RuntimeException(
+                                     "Workflow run not found"
+                                    ));
+
+           workflowRun.markSucceeded();
+
+           workflowRunRepository.save(workflowRun);
+
+           System.out.println(
+                   "Workflow completed: "
+                           + job.getWorkflowId()
+                           + " | run: "
+                           + job.getWorkflowRunId()
+                );
+
+                return;
         }
 
         if (jobRepository.existsByWorkflowRunIdAndWorkflowStepId(
