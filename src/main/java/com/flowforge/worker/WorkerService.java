@@ -132,6 +132,8 @@ public class WorkerService {
 
                 failJob(job);
 
+                workflowProgressService.handleJobFailure(job);
+
                 System.out.println(
                         "Job permanently failed after "
                                 + job.getRetryCount()

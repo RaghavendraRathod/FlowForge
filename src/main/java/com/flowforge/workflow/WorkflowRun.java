@@ -81,4 +81,9 @@ public class WorkflowRun {
         this.status = WorkflowRunStatus.SUCCEEDED;
         this.completedAt = Instant.now();
     }
+
+    public void markFailed() {
+        this.status = WorkflowRunStatus.FAILED;
+        this.completedAt = Instant.now();
+    }
 }

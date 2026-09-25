@@ -107,4 +107,31 @@ public class WorkflowProgressService {
                         + nextStep.getStepOrder()
         );
     }
+
+    @Transactional
+    public void handleJobFailure(Job job) {
+
+        if (job.getWorkflowRunId() == null) {
+            return;
+        }
+
+        WorkflowRun workflowRun =
+                workflowRunRepository
+                        .findById(job.getWorkflowRunId())
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                    "Workflow run not found"
+                                ));
+
+        workflowRun.markFailed();
+
+        workflowRunRepository.save(workflowRun);
+
+        System.out.println(
+                "Workflow failed: "
+                        + job.getWorkflowId()
+                        + " | run: "
+                        + job.getWorkflowRunId()
+                );
+        }
 }
