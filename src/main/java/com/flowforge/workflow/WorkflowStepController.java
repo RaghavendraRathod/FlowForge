@@ -30,6 +30,13 @@ public class WorkflowStepController {
         workflowRepository.findById(workflowId)
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Workflow not found"));
+
+        if (step.getStepOrder() < 1) {
+            throw new BadRequestException(
+            "Step order must be greater than or equal to 1"
+            );
+        }
+        
         step.setWorkflowId(workflowId);
 
         return workflowStepRepository.save(step);

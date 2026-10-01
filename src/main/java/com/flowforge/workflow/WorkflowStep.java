@@ -4,10 +4,21 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 import java.util.UUID;
 
 @Entity
+@Table(
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_workflow_step_order",
+                columnNames = {
+                        "workflow_id",
+                        "step_order"
+                }
+        )
+)
 public class WorkflowStep {
 
     @Id

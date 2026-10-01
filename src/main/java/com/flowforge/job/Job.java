@@ -1,5 +1,8 @@
 package com.flowforge.job;
 
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -11,6 +14,15 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
+@Table(
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_job_workflow_run_step",
+                columnNames = {
+                        "workflow_run_id",
+                        "workflow_step_id"
+                }
+        )
+)
 public class Job {
 
     @Id
