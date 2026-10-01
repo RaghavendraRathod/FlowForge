@@ -30,6 +30,6 @@ public class WorkflowController {
     @GetMapping("/{id}")
     public Workflow getWorkflow(@PathVariable UUID id) {
         return workflowRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Workflow not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Workflow not found"));
     }
 }

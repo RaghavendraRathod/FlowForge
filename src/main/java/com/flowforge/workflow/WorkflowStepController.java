@@ -11,10 +11,14 @@ import java.util.UUID;
 public class WorkflowStepController {
 
     private final WorkflowStepRepository workflowStepRepository;
+    private final WorkflowRepository workflowRepository;
 
     public WorkflowStepController(
-            WorkflowStepRepository workflowStepRepository) {
+            WorkflowStepRepository workflowStepRepository,
+            WorkflowRepository workflowRepository) {
+
         this.workflowStepRepository = workflowStepRepository;
+        this.workflowRepository = workflowRepository;
     }
 
     @PostMapping
@@ -23,6 +27,9 @@ public class WorkflowStepController {
             @PathVariable UUID workflowId,
             @RequestBody WorkflowStep step) {
 
+        workflowRepository.findById(workflowId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Workflow not found"));
         step.setWorkflowId(workflowId);
 
         return workflowStepRepository.save(step);
@@ -31,6 +38,10 @@ public class WorkflowStepController {
     @GetMapping
     public List<WorkflowStep> getSteps(
             @PathVariable UUID workflowId) {
+
+        workflowRepository.findById(workflowId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Workflow not found"));
 
         return workflowStepRepository
                 .findByWorkflowIdOrderByStepOrder(workflowId);

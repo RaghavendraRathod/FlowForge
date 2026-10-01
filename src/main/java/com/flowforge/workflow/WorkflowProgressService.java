@@ -41,8 +41,8 @@ public class WorkflowProgressService {
                 workflowStepRepository
                         .findById(job.getWorkflowStepId())
                         .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Workflow step not found"
+                                new ResourceNotFoundException(
+                                "Workflow step not found"
                                 ));
 
         WorkflowStep nextStep = steps.stream()
@@ -59,8 +59,8 @@ public class WorkflowProgressService {
                     workflowRunRepository
                             .findById(job.getWorkflowRunId())
                             .orElseThrow(() ->
-                                    new RuntimeException(
-                                     "Workflow run not found"
+                                    new ResourceNotFoundException(
+                                   "Workflow run not found"
                                     ));
 
            workflowRun.markSucceeded();

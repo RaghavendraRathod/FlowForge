@@ -33,15 +33,15 @@ public class WorkflowExecutionService {
 
         workflowRepository.findById(workflowId)
                 .orElseThrow(() ->
-                        new RuntimeException("Workflow not found"));
+                        new ResourceNotFoundException("Workflow not found"));
 
         List<WorkflowStep> steps =
                 workflowStepRepository
                         .findByWorkflowIdOrderByStepOrder(workflowId);
 
         if (steps.isEmpty()) {
-            throw new RuntimeException(
-                    "Workflow has no steps"
+            throw new BadRequestException(
+           "Workflow has no steps"
             );
         }
 

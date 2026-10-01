@@ -33,6 +33,6 @@ public class WorkflowRunController {
                 .findById(runId)
                 .filter(run -> run.getWorkflowId().equals(workflowId))
                 .orElseThrow(() ->
-                        new RuntimeException("Workflow run not found"));
+                        new ResourceNotFoundException("Workflow run not found"));
     }
 }
