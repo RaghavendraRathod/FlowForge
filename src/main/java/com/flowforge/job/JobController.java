@@ -1,5 +1,6 @@
 package com.flowforge.job;
 
+import com.flowforge.workflow.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,6 +31,7 @@ public class JobController {
     @GetMapping("/{id}")
     public Job getJob(@PathVariable UUID id) {
         return jobRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Job not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Job not found"));
     }
 }
