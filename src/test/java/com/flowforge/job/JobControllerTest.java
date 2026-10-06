@@ -1,5 +1,6 @@
 package com.flowforge.job;
 
+import static org.mockito.ArgumentMatchers.argThat;
 import com.flowforge.workflow.GlobalExceptionHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -161,12 +162,9 @@ class JobControllerTest {
                         .contentType(APPLICATION_JSON)
                         .content("""
                                 {
-                                  "workflowId": "394562b9-53fb-4353-bb10-643275dd5078",
-                                  "taskType": "ECHO",
-                                  "payload": "API test job",
-                                  "status": "QUEUED",
-                                  "retryCount": 0,
-                                  "maxRetries": 3
+                                 "workflowId": "394562b9-53fb-4353-bb10-643275dd5078",
+                                 "taskType": "ECHO",
+                                 "payload": "API test job"
                                 }
                                 """)
         )
@@ -182,6 +180,13 @@ class JobControllerTest {
         .andExpect(jsonPath("$.status")
                 .value("QUEUED"));
 
-        verify(jobRepository).save(any(Job.class));
+        verify(jobRepository).save(argThat(savedJob ->
+                savedJob.getWorkflowId().equals(workflowId)
+                        && savedJob.getTaskType().equals("ECHO")
+                        && savedJob.getPayload().equals("API test job")
+                        && savedJob.getStatus() == JobStatus.QUEUED
+                        && savedJob.getRetryCount() == 0
+                        && savedJob.getMaxRetries() == 3
+        ));
     }
 }

@@ -20,6 +20,10 @@ public class JobController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Job createJob(@RequestBody Job job) {
+
+        job.setStatus(JobStatus.QUEUED);
+        job.setRetryCount(0);
+
         return jobRepository.save(job);
     }
 
