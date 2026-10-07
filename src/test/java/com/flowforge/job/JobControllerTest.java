@@ -189,4 +189,61 @@ class JobControllerTest {
                         && savedJob.getMaxRetries() == 3
         ));
     }
+
+    @Test
+    void shouldRejectJobWithoutWorkflowId() throws Exception {
+
+        mockMvc.perform(
+                post("/api/jobs")
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "taskType": "ECHO",
+                                  "payload": "API test job"
+                                }
+                                """)
+        )
+        .andExpect(status().isBadRequest());
+
+        verify(jobRepository, org.mockito.Mockito.never())
+                .save(any(Job.class));
+    }
+
+    @Test
+    void shouldRejectJobWithoutTaskType() throws Exception {
+
+        mockMvc.perform(
+                post("/api/jobs")
+                       .contentType(APPLICATION_JSON)
+                       .content("""
+                               {
+                                 "workflowId": "394562b9-53fb-4353-bb10-643275dd5078",
+                                 "payload": "API test job"
+                                }
+                                """)
+        )
+        .andExpect(status().isBadRequest());
+
+        verify(jobRepository, org.mockito.Mockito.never())
+            .save(any(Job.class));
+    }
+
+    @Test
+    void shouldRejectJobWithoutPayload() throws Exception {
+
+        mockMvc.perform(
+                post("/api/jobs")
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "workflowId": "394562b9-53fb-4353-bb10-643275dd5078",
+                                  "taskType": "ECHO"
+                                }
+                                """)
+        )
+        .andExpect(status().isBadRequest());
+
+        verify(jobRepository, org.mockito.Mockito.never())
+            .save(any(Job.class));
+   }
 }

@@ -1,5 +1,6 @@
 package com.flowforge.job;
 
+import jakarta.validation.Valid;
 import com.flowforge.workflow.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -19,10 +20,12 @@ public class JobController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Job createJob(@RequestBody Job job) {
+    public Job createJob(@Valid @RequestBody CreateJobRequest request) {
 
-        job.setStatus(JobStatus.QUEUED);
-        job.setRetryCount(0);
+        Job job = new Job(request.getWorkflowId());
+
+        job.setTaskType(request.getTaskType());
+        job.setPayload(request.getPayload());
 
         return jobRepository.save(job);
     }
