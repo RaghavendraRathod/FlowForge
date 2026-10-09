@@ -30,17 +30,41 @@ public class JobRecoveryService {
 
         Job job = optionalJob.get();
 
-        job.setStatus(JobStatus.QUEUED);
+        job.setRetryCount(job.getRetryCount() + 1);
         job.setStartedAt(null);
         job.setLeaseUntil(null);
         job.setWorkerId(null);
 
-        jobRepository.save(job);
+        if (job.getRetryCount() > job.getMaxRetries()) {
 
-        System.out.println(
-                "Recovered expired job: " + job.getId()
-        );
+            job.setStatus(JobStatus.FAILED);
+            job.setCompletedAt(Instant.now());
 
-        return Optional.of(job);
+            if (job.getErrorMessage() == null
+                    || job.getErrorMessage().isBlank()) {
+                job.setErrorMessage(
+                        "Job lease expired after maximum retries"
+                );
+            }
+
+            System.out.println(
+                    "Expired job permanently failed: " + job.getId()
+            );
+
+        } else {
+
+            job.setStatus(JobStatus.QUEUED);
+            job.setCompletedAt(null);
+
+            System.out.println(
+                    "Recovered expired job: " + job.getId()
+                            + " (retry " + job.getRetryCount()
+                            + "/" + job.getMaxRetries() + ")"
+            );
+        }
+
+        Job savedJob = jobRepository.save(job);
+
+        return Optional.of(savedJob);
     }
 }
