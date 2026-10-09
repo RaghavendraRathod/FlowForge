@@ -1,5 +1,15 @@
 package com.flowforge.worker;
 
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
 import java.time.temporal.ChronoUnit;
 import com.flowforge.job.Job;
 import com.flowforge.job.JobRepository;
@@ -285,4 +295,93 @@ class JobClaimServiceTest {
         assertThat(jobFromDatabase.getWorkerId())
                 .isNull();
     }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void shouldAllowOnlyOneWorkerToClaimTheSameQueuedJob()
+            throws Exception {
+
+        Worker worker1 = createActiveWorker();
+        Worker worker2 = createActiveWorker();
+
+        Job job = new Job(UUID.randomUUID());
+        job.setTaskType("ECHO");
+        job.setPayload("Concurrent claim test");
+        job.setStatus(JobStatus.QUEUED);
+
+        job = jobRepository.saveAndFlush(job);
+
+        UUID jobId = job.getId();
+        UUID worker1Id = worker1.getId();
+        UUID worker2Id = worker2.getId();
+
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch start = new CountDownLatch(1);
+
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+
+        try {
+            Future<Optional<Job>> firstClaim = executor.submit(() -> {
+                ready.countDown();
+
+                if (!start.await(10, TimeUnit.SECONDS)) {
+                    throw new IllegalStateException(
+                        "Timed out waiting to start the first claim"
+                    );
+                }
+
+                return jobClaimService.claimNextJob(worker1Id);
+            });
+
+            Future<Optional<Job>> secondClaim = executor.submit(() -> {
+                ready.countDown();
+
+                if (!start.await(10, TimeUnit.SECONDS)) {
+                    throw new IllegalStateException(
+                        "Timed out waiting to start the second claim"
+                    );
+                }
+
+                return jobClaimService.claimNextJob(worker2Id);
+            });
+
+            assertThat(ready.await(10, TimeUnit.SECONDS))
+                    .isTrue();
+
+            start.countDown();
+
+            Optional<Job> firstResult =
+                    firstClaim.get(15, TimeUnit.SECONDS);
+
+            Optional<Job> secondResult =
+                    secondClaim.get(15, TimeUnit.SECONDS);
+
+            assertThat(firstResult.isPresent())
+                    .isNotEqualTo(secondResult.isPresent());
+
+            Optional<Job> successfulClaim =
+                    firstResult.isPresent() ? firstResult : secondResult;
+
+            assertThat(successfulClaim)
+                    .isPresent();
+
+            assertThat(successfulClaim.get().getId())
+                    .isEqualTo(jobId);
+
+            Job jobFromDatabase = jobRepository.findById(jobId)
+                    .orElseThrow();
+
+            assertThat(jobFromDatabase.getStatus())
+                    .isEqualTo(JobStatus.RUNNING);
+
+            assertThat(jobFromDatabase.getWorkerId())
+                    .isIn(worker1Id, worker2Id);
+
+        } finally {
+            start.countDown();
+            executor.shutdownNow();
+        }
+    }
+
+
 }
