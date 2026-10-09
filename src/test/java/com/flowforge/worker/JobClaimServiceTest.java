@@ -1,5 +1,6 @@
 package com.flowforge.worker;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
 import java.time.temporal.ChronoUnit;
 import com.flowforge.job.Job;
 import com.flowforge.job.JobRepository;
@@ -26,12 +27,21 @@ class JobClaimServiceTest {
     private JobRepository jobRepository;
 
     @Autowired
+    private WorkerRepository workerRepository;
+
+    @Autowired
     private JobClaimService jobClaimService;
+
+    private Worker createActiveWorker() {
+        Worker worker = new Worker("test-worker-" + UUID.randomUUID());
+        worker.setStatus(WorkerStatus.ACTIVE);
+        return workerRepository.saveAndFlush(worker);
+    }
 
     @Test
     void shouldClaimQueuedJobForWorker() {
 
-        UUID workerId = UUID.randomUUID();
+        UUID workerId = createActiveWorker().getId();
 
         Job job = new Job(UUID.randomUUID());
 
@@ -81,7 +91,7 @@ class JobClaimServiceTest {
     @Test
     void shouldReturnEmptyWhenNoQueuedJobsExist() {
 
-        UUID workerId = UUID.randomUUID();
+        UUID workerId = createActiveWorker().getId();
 
         var claimedJob =
                 jobClaimService.claimNextJob(workerId);
@@ -92,7 +102,7 @@ class JobClaimServiceTest {
     @Test
     void shouldClaimOldestQueuedJobFirst() {
 
-        UUID workerId = UUID.randomUUID();
+        UUID workerId = createActiveWorker().getId();
         UUID workflowId = UUID.randomUUID();
 
         Instant olderTime = Instant.now()
@@ -144,7 +154,7 @@ class JobClaimServiceTest {
     @Test
     void shouldNotClaimJobThatIsAlreadyRunning() {
 
-        UUID workerId = UUID.randomUUID();
+        UUID workerId = createActiveWorker().getId();
         UUID originalWorkerId = UUID.randomUUID();
 
         Job job = new Job(UUID.randomUUID());
@@ -182,5 +192,35 @@ class JobClaimServiceTest {
         )
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Worker ID must not be null");
+    }
+
+    @Test
+    void shouldRejectUnregisteredWorker() {
+
+        UUID unknownWorkerId = UUID.randomUUID();
+
+        assertThatThrownBy(() ->
+                jobClaimService.claimNextJob(unknownWorkerId)
+        )
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Worker not found: " + unknownWorkerId);
+    }
+
+    @Test
+    void shouldRejectInactiveWorker() {
+
+        Worker worker = new Worker(
+                "inactive-worker-" + UUID.randomUUID()
+        );
+
+        worker.setStatus(WorkerStatus.OFFLINE);
+
+        Worker savedWorker = workerRepository.saveAndFlush(worker);
+
+        assertThatThrownBy(() ->
+                jobClaimService.claimNextJob(savedWorker.getId())
+        )
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Worker is not active: " + savedWorker.getId());
     }
 }

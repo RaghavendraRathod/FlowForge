@@ -3,6 +3,7 @@ package com.flowforge.worker;
 import com.flowforge.job.Job;
 import com.flowforge.job.JobRepository;
 import com.flowforge.job.JobStatus;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,16 +15,36 @@ import java.util.UUID;
 public class JobClaimService {
 
     private final JobRepository jobRepository;
+    private final WorkerRepository workerRepository;
 
-    public JobClaimService(JobRepository jobRepository) {
+    public JobClaimService(
+            JobRepository jobRepository,
+            WorkerRepository workerRepository
+    ) {
         this.jobRepository = jobRepository;
+        this.workerRepository = workerRepository;
     }
 
     @Transactional
     public Optional<Job> claimNextJob(UUID workerId) {
 
         if (workerId == null) {
-            throw new IllegalArgumentException("Worker ID must not be null");
+            throw new IllegalArgumentException(
+                    "Worker ID must not be null"
+            );
+        }
+
+        Worker worker = workerRepository.findById(workerId)
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "Worker not found: " + workerId
+                        )
+                );
+
+        if (worker.getStatus() != WorkerStatus.ACTIVE) {
+            throw new IllegalStateException(
+                    "Worker is not active: " + workerId
+            );
         }
 
         Optional<Job> optionalJob =
