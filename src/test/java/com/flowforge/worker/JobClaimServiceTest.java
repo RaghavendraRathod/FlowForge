@@ -1,6 +1,5 @@
 package com.flowforge.worker;
 
-import static org.assertj.core.api.Assertions.assertThatCode;
 import java.time.temporal.ChronoUnit;
 import com.flowforge.job.Job;
 import com.flowforge.job.JobRepository;
@@ -222,5 +221,68 @@ class JobClaimServiceTest {
         )
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Worker is not active: " + savedWorker.getId());
+    }
+
+    @Test
+    void shouldNotChangeQueuedJobWhenWorkerIsUnregistered() {
+
+        UUID unknownWorkerId = UUID.randomUUID();
+
+        Job job = new Job(UUID.randomUUID());
+        job.setTaskType("ECHO");
+        job.setPayload("Must remain queued");
+        job.setStatus(JobStatus.QUEUED);
+
+        job = jobRepository.saveAndFlush(job);
+
+        assertThatThrownBy(() ->
+                jobClaimService.claimNextJob(unknownWorkerId)
+        )
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Worker not found: " + unknownWorkerId);
+
+        Job jobFromDatabase = jobRepository
+                .findById(job.getId())
+                .orElseThrow();
+
+        assertThat(jobFromDatabase.getStatus())
+                .isEqualTo(JobStatus.QUEUED);
+
+        assertThat(jobFromDatabase.getWorkerId())
+                .isNull();
+    }
+
+    @Test
+    void shouldNotChangeQueuedJobWhenWorkerIsInactive() {
+
+        Worker worker = new Worker(
+                "offline-worker-" + UUID.randomUUID()
+        );
+        worker.setStatus(WorkerStatus.OFFLINE);
+
+        Worker savedWorker = workerRepository.saveAndFlush(worker);
+
+        Job job = new Job(UUID.randomUUID());
+        job.setTaskType("ECHO");
+        job.setPayload("Must remain queued");
+        job.setStatus(JobStatus.QUEUED);
+
+        job = jobRepository.saveAndFlush(job);
+
+        assertThatThrownBy(() ->
+                jobClaimService.claimNextJob(savedWorker.getId())
+        )
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Worker is not active: " + savedWorker.getId());
+
+        Job jobFromDatabase = jobRepository
+                .findById(job.getId())
+                .orElseThrow();
+
+        assertThat(jobFromDatabase.getStatus())
+                .isEqualTo(JobStatus.QUEUED);
+
+        assertThat(jobFromDatabase.getWorkerId())
+                .isNull();
     }
 }
