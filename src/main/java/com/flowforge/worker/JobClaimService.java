@@ -22,6 +22,10 @@ public class JobClaimService {
     @Transactional
     public Optional<Job> claimNextJob(UUID workerId) {
 
+        if (workerId == null) {
+            throw new IllegalArgumentException("Worker ID must not be null");
+        }
+
         Optional<Job> optionalJob =
                 jobRepository.findNextQueuedJobForUpdate();
 

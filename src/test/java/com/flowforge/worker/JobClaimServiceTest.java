@@ -15,6 +15,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -171,5 +172,15 @@ class JobClaimServiceTest {
 
         assertThat(jobFromDatabase.getWorkerId())
                 .isEqualTo(originalWorkerId);
+    }
+
+    @Test
+    void shouldRejectNullWorkerId() {
+
+        assertThatThrownBy(() ->
+                jobClaimService.claimNextJob(null)
+        )
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Worker ID must not be null");
     }
 }
