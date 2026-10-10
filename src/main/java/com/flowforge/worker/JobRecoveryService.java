@@ -3,6 +3,7 @@ package com.flowforge.worker;
 import com.flowforge.job.Job;
 import com.flowforge.job.JobRepository;
 import com.flowforge.job.JobStatus;
+import com.flowforge.workflow.WorkflowProgressService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,9 +14,14 @@ import java.util.Optional;
 public class JobRecoveryService {
 
     private final JobRepository jobRepository;
+    private final WorkflowProgressService workflowProgressService;
 
-    public JobRecoveryService(JobRepository jobRepository) {
+    public JobRecoveryService(
+            JobRepository jobRepository,
+            WorkflowProgressService workflowProgressService) {
+
         this.jobRepository = jobRepository;
+        this.workflowProgressService = workflowProgressService;
     }
 
     @Transactional
@@ -42,14 +48,22 @@ public class JobRecoveryService {
 
             if (job.getErrorMessage() == null
                     || job.getErrorMessage().isBlank()) {
+
                 job.setErrorMessage(
                         "Job lease expired after maximum retries"
                 );
             }
 
+            Job savedJob = jobRepository.save(job);
+
+            // Propagate permanent job failure to its workflow run.
+            workflowProgressService.handleJobFailure(savedJob);
+
             System.out.println(
-                    "Expired job permanently failed: " + job.getId()
+                    "Expired job permanently failed: " + savedJob.getId()
             );
+
+            return Optional.of(savedJob);
 
         } else {
 

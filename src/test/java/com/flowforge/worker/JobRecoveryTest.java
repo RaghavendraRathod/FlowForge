@@ -1,8 +1,15 @@
 package com.flowforge.worker;
 
+import com.flowforge.workflow.Workflow;
 import com.flowforge.job.Job;
 import com.flowforge.job.JobRepository;
 import com.flowforge.job.JobStatus;
+import com.flowforge.workflow.WorkflowProgressService;
+
+import com.flowforge.workflow.WorkflowRun;
+import com.flowforge.workflow.WorkflowRunRepository;
+import com.flowforge.workflow.WorkflowRunStatus;
+import com.flowforge.workflow.WorkflowRepository;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +25,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import(JobRecoveryService.class)
+@Import({
+        JobRecoveryService.class,
+        WorkflowProgressService.class
+})
 class JobRecoveryTest {
 
     @Autowired
@@ -26,6 +36,12 @@ class JobRecoveryTest {
 
     @Autowired
     private JobRecoveryService jobRecoveryService;
+
+    @Autowired
+    private WorkflowRepository workflowRepository;
+
+    @Autowired
+    private WorkflowRunRepository workflowRunRepository;
 
     @Test
     void shouldRecoverExpiredRunningJob() {
@@ -159,4 +175,64 @@ class JobRecoveryTest {
         assertThat(failedJob.getErrorMessage())
                 .isEqualTo("Job lease expired after maximum retries");
     }
+
+    @Test
+    void shouldFailWorkflowRunWhenExpiredJobExhaustsRetries() {
+
+        jobRepository.deleteAll();
+        jobRepository.flush();
+
+        Workflow workflow = workflowRepository.save(
+                new Workflow(
+                        "Recovery Failure Test",
+                        "Verify workflow failure propagation"
+                )
+        );
+
+        WorkflowRun workflowRun =
+                 workflowRunRepository.save(
+                        new WorkflowRun(workflow.getId())
+                );
+
+        workflowRun.setStatus(WorkflowRunStatus.RUNNING);
+        workflowRun.setStartedAt(Instant.now());
+
+        workflowRun = workflowRunRepository.save(workflowRun);
+
+        UUID workflowRunId = workflowRun.getId();
+
+        Job job = new Job(workflow.getId());
+
+        job.setWorkflowRunId(workflowRunId);
+        job.setTaskType("ECHO");
+        job.setPayload("Expired workflow job");
+        job.setStatus(JobStatus.RUNNING);
+        job.setRetryCount(3);
+        job.setMaxRetries(3);
+        job.setStartedAt(Instant.now().minusSeconds(120));
+        job.setLeaseUntil(Instant.now().minusSeconds(60));
+        job.setWorkerId(UUID.randomUUID());
+
+        job = jobRepository.save(job);
+
+        UUID jobId = job.getId();
+
+        Optional<Job> recoveredJob =
+                jobRecoveryService.recoverExpiredJob();
+
+        assertThat(recoveredJob).isPresent();
+        assertThat(recoveredJob.get().getId()).isEqualTo(jobId);
+        assertThat(recoveredJob.get().getStatus())
+                .isEqualTo(JobStatus.FAILED);
+
+        WorkflowRun failedRun =
+                workflowRunRepository.findById(workflowRunId)
+                        .orElseThrow();
+
+        assertThat(failedRun.getStatus())
+                .isEqualTo(WorkflowRunStatus.FAILED);
+
+        assertThat(failedRun.getCompletedAt())
+                .isNotNull();
+   }
 }
